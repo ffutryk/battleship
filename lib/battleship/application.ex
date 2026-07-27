@@ -11,6 +11,9 @@ defmodule Battleship.Application do
       # Battleship.Repo,
       {DNSCluster, query: Application.get_env(:battleship, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Battleship.PubSub},
+      Battleship.Game.Registry,
+      Battleship.Matchmaking.Supervisor,
+      Battleship.Game.Supervisor,
       # Start a worker by calling: Battleship.Worker.start_link(arg)
       # {Battleship.Worker, arg},
       # Start to serve requests, typically the last entry
