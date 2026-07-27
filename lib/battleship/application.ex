@@ -8,7 +8,7 @@ defmodule Battleship.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      Battleship.Repo,
+      # Battleship.Repo,
       {DNSCluster, query: Application.get_env(:battleship, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Battleship.PubSub},
       # Start a worker by calling: Battleship.Worker.start_link(arg)
