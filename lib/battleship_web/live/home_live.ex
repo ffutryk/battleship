@@ -1,6 +1,18 @@
 defmodule BattleshipWeb.HomeLive do
   use BattleshipWeb, :live_view
 
+  def mount(_params, _session, socket) do
+    player = %{
+      id: System.unique_integer([:positive])
+    }
+
+    socket =
+      socket
+      |> assign(player: player, state: :idle)
+
+    {:ok, socket}
+  end
+
   def render(assigns) do
     ~H"""
     <main class="min-h-dvh flex flex-col items-center justify-center bg-ocean font-silkscreen px-4 gap-8">
@@ -10,7 +22,10 @@ defmodule BattleshipWeb.HomeLive do
         </h1>
         <span class="ml-[0.05em] text-[0.5em] tracking-[-0.1em] leading-none">TM</span>
       </div>
-      <.button class="btn-pixel">Play as Guest</.button>
+      <.button class="btn-pixel" phx-click="play-guest">
+        {if @state == :matchmaking, do: "Matchmaking", else: "Play as Guest"}
+        <span :if={@state == :matchmaking} class="animate-dots"></span>
+      </.button>
     </main>
     """
   end
