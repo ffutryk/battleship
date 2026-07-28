@@ -57,7 +57,7 @@ defmodule BattleshipWeb.HomeLive do
   def handle_info({:error, reason}, socket) do
     {:noreply,
      socket
-     |> assign(status: :idle)
+     |> assign(state: :idle)
      |> put_flash(:error, "Error al buscar partida: #{reason}")}
   end
 
