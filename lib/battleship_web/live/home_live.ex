@@ -57,8 +57,8 @@ defmodule BattleshipWeb.HomeLive do
   def handle_info({:error, reason}, socket) do
     {:noreply,
      socket
-     |> assign(status: :idle)
-     |> put_flash(:error, "Error al buscar partida: #{reason}")}
+     |> assign(state: :idle)
+     |> put_flash(:error, "An error has ocurred during matchmaking: #{reason}")}
   end
 
   defp start_matchmaking(player) do
