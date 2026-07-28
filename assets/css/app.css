@@ -103,3 +103,46 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+@theme {
+    --color-ocean: oklch(0.6215 0.1058 238.48);
+    --color-hull: oklch(0.6781 0.2159 39.29);
+    --color-hull-shadow: oklch(0.3584 0.1013 43.43);
+}
+
+@layer utilities {
+  .font-silkscreen {
+    font-family: 'Silkscreen', cursive, monospace;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: unset;
+  }
+
+  .stroke-text {
+    text-shadow:
+      0.06em 0 0 white,
+      -0.06em 0 0 white,
+      0 0.06em 0 white,
+      0 -0.06em 0 white,
+      0.06em 0.06em 0 white,
+      -0.06em 0.06em 0 white,
+      0.06em -0.06em 0 white,
+      -0.06em -0.06em 0 white;
+  }
+}
+
+@layer components {
+  .btn-pixel {
+    @apply flex h-8 w-[214px] items-center justify-center;
+    @apply text-base font-normal tracking-tight leading-none text-white text-center;
+    @apply bg-hull shadow-[0px_8px_0px_var(--color-hull-shadow)];
+    image-rendering: pixelated;
+  }
+
+  .btn-pixel:hover {
+    @apply translate-y-[2px] bg-[#E07A5F] shadow-[0px_6px_0px_var(--color-hull-shadow)];
+  }
+
+  .btn-pixel:active {
+    @apply translate-y-[8px] bg-hull shadow-[0px_0px_0px_var(--color-hull-shadow)];
+  }
+}
