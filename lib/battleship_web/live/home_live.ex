@@ -1,6 +1,9 @@
 defmodule BattleshipWeb.HomeLive do
   use BattleshipWeb, :live_view
 
+  alias Battleship.Matchmaking.Queue
+
+  @impl true
   def mount(_params, _session, socket) do
     player = %{
       id: System.unique_integer([:positive])
@@ -13,6 +16,7 @@ defmodule BattleshipWeb.HomeLive do
     {:ok, socket}
   end
 
+  @impl true
   def render(assigns) do
     ~H"""
     <main class="min-h-dvh flex flex-col items-center justify-center bg-ocean font-silkscreen px-4 gap-8">
@@ -28,5 +32,44 @@ defmodule BattleshipWeb.HomeLive do
       </.button>
     </main>
     """
+  end
+
+  @impl true
+  def handle_event("play-guest", _payload, socket) do
+    %{state: state, player: player} = socket.assigns
+
+    new_state =
+      case state do
+        :idle -> start_matchmaking(player)
+        :matchmaking -> cancel_matchmaking(player)
+        _ -> state
+      end
+
+    {:noreply, assign(socket, state: new_state)}
+  end
+
+  @impl true
+  def handle_info({:match_found, game_id}, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/games/#{game_id}")}
+  end
+
+  @impl true
+  def handle_info({:error, reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(status: :idle)
+     |> put_flash(:error, "Error al buscar partida: #{reason}")}
+  end
+
+  defp start_matchmaking(player) do
+    Phoenix.PubSub.subscribe(Battleship.PubSub, "matchmaking:#{player.id}")
+    Queue.join_queue(player, self())
+    :matchmaking
+  end
+
+  defp cancel_matchmaking(player) do
+    Queue.leave_queue(player)
+    Phoenix.PubSub.unsubscribe(Battleship.PubSub, "matchmaking:#{player.id}")
+    :idle
   end
 end
