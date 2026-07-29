@@ -36,6 +36,19 @@ defmodule Battleship.Game.Core.Board do
   def ready?(%__MODULE__{available_ships: []}), do: true
   def ready?(%__MODULE__{}), do: false
 
+  def fill_random(%__MODULE__{available_ships: []} = board), do: board
+
+  def fill_random(%__MODULE__{available_ships: [length | _]} = board) do
+    case random_candidate(board, length) do
+      {:ok, coords} ->
+        {:ok, updated_board} = place_ship(board, coords)
+        fill_random(updated_board)
+
+      :error ->
+        {:error, :no_space_left}
+    end
+  end
+
   defp validate_not_empty(coords) do
     if coords == [], do: {:error, :empty_ship}, else: :ok
   end
@@ -74,5 +87,30 @@ defmodule Battleship.Game.Core.Board do
     Enum.any?(ships, fn ship ->
       not MapSet.disjoint?(ship.coordinates, coords)
     end)
+  end
+
+  defp random_candidate(board, length) do
+    candidates =
+      for row <- 0..@size,
+          col <- 0..@size,
+          orientation <- [:horizontal, :vertical],
+          coords = ship_coords(row, col, length, orientation),
+          Enum.all?(coords, &within_bounds?/1),
+          not overlaps?(board, %Ship{coordinates: MapSet.new(coords)}) do
+        coords
+      end
+
+    case candidates do
+      [] -> :error
+      list -> {:ok, Enum.random(list)}
+    end
+  end
+
+  defp ship_coords(row, col, length, :horizontal) do
+    Enum.map(0..(length - 1), fn c -> {row, col + c} end)
+  end
+
+  defp ship_coords(row, col, length, :vertical) do
+    Enum.map(0..(length - 1), fn r -> {row + r, col} end)
   end
 end
