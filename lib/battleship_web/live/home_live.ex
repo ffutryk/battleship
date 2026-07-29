@@ -19,7 +19,7 @@ defmodule BattleshipWeb.HomeLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <main class="min-h-dvh flex flex-col items-center justify-center bg-ocean font-silkscreen px-4 gap-8">
+    <main class="h-full flex flex-col items-center justify-center px-4 gap-8">
       <div class="inline-flex justify-center items-start text-[clamp(3rem,14vw,8rem)]">
         <h1 class="text-hull tracking-[-0.2em]  stroke-text">
           BATTLESHIP
