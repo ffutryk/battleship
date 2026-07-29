@@ -4,6 +4,7 @@ defmodule Battleship.Game.Core.Board do
   alias Battleship.Game.Core.Ship
 
   @size 9
+  @ships_required 5
 
   def place_ship(board, coords) do
     ship = %Ship{coordinates: MapSet.new(coords)}
@@ -42,4 +43,6 @@ defmodule Battleship.Game.Core.Board do
       not MapSet.disjoint?(ship.coordinates, coords)
     end)
   end
+
+  def ready?(%__MODULE__{ships: ships}), do: length(ships) == @ships_required
 end
