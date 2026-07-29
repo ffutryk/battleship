@@ -17,11 +17,11 @@ defmodule Battleship.Game.Coordinator do
 
   defp notify_players(players, message) do
     Enum.each(players, fn player ->
-      broadcast(player, message)
+      broadcast_matchmaking(player, message)
     end)
   end
 
-  defp broadcast(player, message) do
+  defp broadcast_matchmaking(player, message) do
     Phoenix.PubSub.broadcast(
       Battleship.PubSub,
       "matchmaking:#{player.id}",
