@@ -12,7 +12,12 @@ defmodule Battleship.Game.Server do
     GenServer.start_link(__MODULE__, {game_id, players}, name: GameRegistry.via_tuple(game_id))
   end
 
-  def get_state(game_id), do: GenServer.call(GameRegistry.via_tuple(game_id), :get_state)
+  def get_state(game_id) do
+    case GenServer.whereis(GameRegistry.via_tuple(game_id)) do
+      nil -> nil
+      pid -> GenServer.call(pid, :get_state)
+    end
+  end
 
   def place_ship(game_id, player_id, coords) do
     GenServer.call(GameRegistry.via_tuple(game_id), {:place_ship, player_id, coords})
