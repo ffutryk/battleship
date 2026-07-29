@@ -8,8 +8,10 @@ defmodule Battleship.Game.State do
     :boards
   ]
 
+  alias Battleship.Game.Core.Board
+
   def init(id, players, timer_ref, placement_deadline) do
-    boards = Enum.into(players, %{}, fn player -> {player.id, %{}} end)
+    boards = Map.new(players, &{&1.id, %Board{}})
 
     %__MODULE__{
       id: id,
