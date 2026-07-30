@@ -30,8 +30,17 @@ defmodule BattleshipWeb.GameLive do
   end
 
   @impl true
+  def render(%{state: %State{phase: :waiting_opponent}} = assigns), do: waiting_phase(assigns)
   def render(%{state: %State{phase: :placement}} = assigns), do: placement_phase(assigns)
   def render(%{state: %State{phase: :battle}} = assigns), do: battle_phase(assigns)
+
+  defp waiting_phase(assigns) do
+    ~H"""
+    <main class="h-full flex items-center justify-center">
+      Waiting for opponent<span class="animate-dots"></span>
+    </main>
+    """
+  end
 
   defp placement_phase(assigns) do
     ~H"""
