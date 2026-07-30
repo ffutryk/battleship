@@ -96,7 +96,7 @@ defmodule Battleship.Game.Server do
             connected_state
           end
 
-        {:reply, {:ok, new_state.placement_deadline}, new_state}
+        {:reply, :ok, new_state}
     end
   end
 
@@ -109,13 +109,12 @@ defmodule Battleship.Game.Server do
   def handle_info(:placement_timeout, state), do: {:noreply, state}
 
   defp progress(%State{phase: :waiting_opponent} = state) do
-    deadline = System.system_time(:millisecond) + @placement_seconds * 1000
     timer_ref = Process.send_after(self(), :placement_timeout, @placement_timeout)
+    remaining_ms = Process.read_timer(timer_ref)
 
-    broadcast(state.id, {:phase_changed, :placement})
+    broadcast(state.id, {:phase_changed, :placement, remaining_ms})
 
     state
-    |> Map.put(:placement_deadline, deadline)
     |> Map.put(:timer_ref, timer_ref)
     |> State.next_phase()
   end
