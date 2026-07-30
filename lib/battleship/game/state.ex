@@ -4,11 +4,11 @@ defmodule Battleship.Game.State do
   alias Battleship.Game.Core.Board
 
   def init(id, players, timer_ref \\ nil, placement_deadline \\ nil) do
-    boards = Map.new(players, &{&1.id, %Board{}})
+    boards = Map.new(players, fn player_id -> {player_id, %Board{}} end)
 
     players =
-      Map.new(players, fn p ->
-        {p.id, %{meta: p, connected: false, ready: false}}
+      Map.new(players, fn player_id ->
+        {player_id, %{connected: false, ready: false}}
       end)
 
     %__MODULE__{
