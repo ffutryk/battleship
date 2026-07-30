@@ -19,6 +19,10 @@ defmodule Battleship.Game.Server do
     end
   end
 
+  def connect(game_id, player_id, pid) do
+    GenServer.call(GameRegistry.via_tuple(game_id), {:player_connected, player_id, pid})
+  end
+
   def place_ship(game_id, player_id, coords) do
     GenServer.call(GameRegistry.via_tuple(game_id), {:place_ship, player_id, coords})
   end
