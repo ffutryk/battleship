@@ -24,7 +24,8 @@ defmodule BattleshipWeb.GameLive do
 
       state ->
         Phoenix.PubSub.subscribe(Battleship.PubSub, "game:#{state.id}")
-        _ = Server.connect(game_id, player_token, self())
+        Server.connect(game_id, player_token, self())
+
         {:ok, assign(socket, state: state, player_id: player_token)}
     end
   end
@@ -45,7 +46,7 @@ defmodule BattleshipWeb.GameLive do
   defp placement_phase(assigns) do
     ~H"""
     <main class="h-full flex flex-col items-center justify-center">
-      <.timer class="flex md:hidden mb-8" />
+      <.timer id="timer-mobile" class="flex md:hidden mb-8" remaining_ms={@placement_remaining_ms} />
       <div class="flex flex-col md:flex-row gap-8">
         <div class="flex flex-col gap-2 items-center justify-center">
           <h2>Build your fleet</h2>
@@ -71,7 +72,7 @@ defmodule BattleshipWeb.GameLive do
           </div>
         </div>
         <div class="flex flex-col justify-center items-center gap-8">
-          <.timer class="hidden md:flex" />
+          <.timer id="timer-desktop" class="hidden md:flex" remaining_ms={@placement_remaining_ms} />
           <div class="flex gap-4">
             <.button class="btn-pixel w-fit px-8">Confirm</.button>
             <.button class="btn-pixel-icon">
@@ -111,9 +112,16 @@ defmodule BattleshipWeb.GameLive do
 
   defp timer(assigns) do
     ~H"""
-    <div class={["relative items-center justify-center w-32 h-32", Map.get(assigns, :class, "flex")]}>
+    <div
+      id={@id}
+      phx-hook="Timer"
+      data-remaining-ms={@remaining_ms}
+      data-duration-s="30"
+      class={["relative items-center justify-center w-32 h-32", Map.get(assigns, :class, "flex")]}
+    >
       <svg class="absolute inset-0 w-full h-full rotate-90" viewBox="0 0 100 100">
         <rect
+          data-role="progress"
           x="5"
           y="5"
           width="90"
@@ -123,10 +131,10 @@ defmodule BattleshipWeb.GameLive do
           stroke-width="8"
           pathLength="100"
           stroke-dasharray="100"
-          stroke-dashoffset={0}
+          stroke-dashoffset="0"
         />
       </svg>
-      <span class="text-7xl tracking-[-0.2em] -translate-x-1.5">30</span>
+      <span data-role="seconds" class="text-7xl tracking-[-0.2em] -translate-x-1.5">30</span>
     </div>
     """
   end
@@ -134,11 +142,15 @@ defmodule BattleshipWeb.GameLive do
   defp row_label(row), do: Enum.at(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"], row)
 
   @impl true
-  def handle_info({:phase_changed, new_phase}, socket) do
-    socket =
-      socket
-      |> update(:state, &%{&1 | phase: new_phase})
+  def handle_info({:phase_changed, :placement, remaining_ms}, socket) do
+    {:noreply,
+     socket
+     |> update(:state, &%{&1 | phase: :placement})
+     |> assign(:placement_remaining_ms, remaining_ms)}
+  end
 
-    {:noreply, socket}
+  @impl true
+  def handle_info({:phase_changed, new_phase}, socket) do
+    {:noreply, update(socket, :state, &%{&1 | phase: new_phase})}
   end
 end
