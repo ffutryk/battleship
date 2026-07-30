@@ -60,7 +60,7 @@ defmodule Battleship.Game.Server do
       new_state = State.mark_ready(state, player_id)
 
       if State.all_ready?(new_state) do
-        {:reply, :ok, start_battle(new_state)}
+        {:reply, :ok, progress(new_state)}
       else
         {:reply, :ok, new_state}
       end
@@ -75,20 +75,23 @@ defmodule Battleship.Game.Server do
 
   @impl true
   def handle_info(:placement_timeout, %State{phase: :placement} = state) do
-    {:noreply, start_battle(state)}
+    {:noreply, progress(state)}
   end
 
   @impl true
   def handle_info(:placement_timeout, state), do: {:noreply, state}
 
-  defp start_battle(state) do
+  defp progress(%State{phase: :placement} = state) do
     if state.timer_ref, do: Process.cancel_timer(state.timer_ref)
 
     boards = Map.new(state.boards, fn {id, board} -> {id, Board.fill_random(board)} end)
 
     broadcast(state.id, {:phase_changed, :battle})
 
-    %{state | boards: boards, timer_ref: nil} |> State.next_phase()
+    state
+    |> Map.put(:boards, boards)
+    |> Map.put(:timer_ref, nil)
+    |> State.next_phase()
   end
 
   defp broadcast(id, message), do: Phoenix.PubSub.broadcast(Battleship.PubSub, topic(id), message)
