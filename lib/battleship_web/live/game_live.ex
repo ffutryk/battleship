@@ -4,7 +4,9 @@ defmodule BattleshipWeb.GameLive do
   alias Battleship.Game.{Server, State}
 
   @impl true
-  def mount(%{"id" => id}, _session, socket) do
+  def mount(%{"id" => id}, session, socket) do
+    player_token = session["player_token"]
+
     game_id =
       case Integer.parse(id) do
         {int, ""} -> int
@@ -22,7 +24,8 @@ defmodule BattleshipWeb.GameLive do
 
       state ->
         Phoenix.PubSub.subscribe(Battleship.PubSub, "game:#{state.id}")
-        {:ok, assign(socket, state: state)}
+        _ = Server.connect(game_id, player_token, self())
+        {:ok, assign(socket, state: state, player_id: player_token)}
     end
   end
 

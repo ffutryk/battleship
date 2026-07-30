@@ -8,6 +8,8 @@ defmodule BattleshipWeb.Router do
     plug :put_root_layout, html: {BattleshipWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+
+    plug BattleshipWeb.Plugs.EnsurePlayer
   end
 
   scope "/", BattleshipWeb do

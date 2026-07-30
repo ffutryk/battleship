@@ -4,16 +4,13 @@ defmodule BattleshipWeb.HomeLive do
   alias Battleship.Matchmaking.Queue
 
   @impl true
-  def mount(_params, _session, socket) do
-    player = %{
-      id: System.unique_integer([:positive])
-    }
+  def mount(_params, session, socket) do
+    player_token = session["player_token"]
 
-    socket =
-      socket
-      |> assign(player: player, state: :idle)
-
-    {:ok, socket}
+    {:ok,
+     socket
+     |> assign(state: :idle)
+     |> assign(player_id: player_token)}
   end
 
   @impl true
@@ -36,16 +33,16 @@ defmodule BattleshipWeb.HomeLive do
 
   @impl true
   def handle_event("play-guest", _payload, socket) do
-    %{state: state, player: player} = socket.assigns
+    %{state: state, player_id: player_id} = socket.assigns
 
     new_state =
       case state do
-        :idle -> start_matchmaking(player)
-        :matchmaking -> cancel_matchmaking(player)
+        :idle -> start_matchmaking(player_id)
+        :matchmaking -> cancel_matchmaking(player_id)
         _ -> state
       end
 
-    {:noreply, assign(socket, state: new_state)}
+    {:noreply, assign(socket, state: new_state, player_id: player_id)}
   end
 
   @impl true
@@ -61,15 +58,15 @@ defmodule BattleshipWeb.HomeLive do
      |> put_flash(:error, "An error has ocurred during matchmaking: #{reason}")}
   end
 
-  defp start_matchmaking(player) do
-    Phoenix.PubSub.subscribe(Battleship.PubSub, "matchmaking:#{player.id}")
-    Queue.join_queue(player, self())
+  defp start_matchmaking(player_id) do
+    Phoenix.PubSub.subscribe(Battleship.PubSub, "matchmaking:#{player_id}")
+    Queue.join_queue(player_id, self())
     :matchmaking
   end
 
-  defp cancel_matchmaking(player) do
-    Queue.leave_queue(player)
-    Phoenix.PubSub.unsubscribe(Battleship.PubSub, "matchmaking:#{player.id}")
+  defp cancel_matchmaking(player_id) do
+    Queue.leave_queue(player_id)
+    Phoenix.PubSub.unsubscribe(Battleship.PubSub, "matchmaking:#{player_id}")
     :idle
   end
 end
