@@ -86,8 +86,11 @@ defmodule Battleship.Game.Server do
 
     boards = Map.new(state.boards, fn {id, board} -> {id, Board.fill_random(board)} end)
 
-    Phoenix.PubSub.broadcast(Battleship.PubSub, "game:#{state.id}", {:phase_changed, :battle})
+    broadcast(state.id, {:phase_changed, :battle})
 
     %{state | boards: boards, timer_ref: nil} |> State.next_phase()
   end
+
+  defp broadcast(id, message), do: Phoenix.PubSub.broadcast(Battleship.PubSub, topic(id), message)
+  defp topic(id), do: "game:#{id}"
 end
