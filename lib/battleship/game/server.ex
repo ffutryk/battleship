@@ -24,12 +24,7 @@ defmodule Battleship.Game.Server do
 
   @impl true
   def init({game_id, players}) do
-    timer_ref = Process.send_after(self(), :placement_timeout, @placement_timeout)
-    placement_deadline = System.monotonic_time(:second) + @placement_seconds
-
-    state = State.init(game_id, players, timer_ref, placement_deadline)
-
-    {:ok, state}
+    {:ok, State.init(game_id, players)}
   end
 
   @impl true
@@ -49,10 +44,12 @@ defmodule Battleship.Game.Server do
     end
   end
 
+  @impl true
   def handle_call({:place_ship, _, _}, _from, state) do
     {:reply, {:error, :not_placement_phase}, state}
   end
 
+  @impl true
   def handle_call({:confirm_placement, player_id}, _from, %State{phase: :placement} = state) do
     board = Map.fetch!(state.boards, player_id)
 
@@ -69,8 +66,29 @@ defmodule Battleship.Game.Server do
     end
   end
 
+  @impl true
   def handle_call({:confirm_placement, _player_id}, _from, state) do
     {:reply, {:error, :not_placement_phase}, state}
+  end
+
+  @impl true
+  def handle_call({:player_connected, player_id, pid}, _from, state) do
+    Process.monitor(pid)
+
+    case State.mark_connected(state, player_id) do
+      {:error, _} = error ->
+        {:reply, error, state}
+
+      connected_state ->
+        new_state =
+          if can_progress_to_placement?(connected_state) do
+            progress(connected_state)
+          else
+            connected_state
+          end
+
+        {:reply, {:ok, new_state.placement_deadline}, new_state}
+    end
   end
 
   @impl true
@@ -80,6 +98,18 @@ defmodule Battleship.Game.Server do
 
   @impl true
   def handle_info(:placement_timeout, state), do: {:noreply, state}
+
+  defp progress(%State{phase: :waiting_opponent} = state) do
+    deadline = System.system_time(:millisecond) + @placement_seconds * 1000
+    timer_ref = Process.send_after(self(), :placement_timeout, @placement_timeout)
+
+    broadcast(state.id, {:phase_changed, :placement})
+
+    state
+    |> Map.put(:placement_deadline, deadline)
+    |> Map.put(:timer_ref, timer_ref)
+    |> State.next_phase()
+  end
 
   defp progress(%State{phase: :placement} = state) do
     if state.timer_ref, do: Process.cancel_timer(state.timer_ref)
@@ -96,4 +126,7 @@ defmodule Battleship.Game.Server do
 
   defp broadcast(id, message), do: Phoenix.PubSub.broadcast(Battleship.PubSub, topic(id), message)
   defp topic(id), do: "game:#{id}"
+
+  defp can_progress_to_placement?(%State{phase: phase, timer_ref: timer} = state),
+    do: phase == :waiting_opponent and is_nil(timer) and State.all_connected?(state)
 end
