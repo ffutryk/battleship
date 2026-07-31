@@ -135,21 +135,22 @@ export const FleetPlacement = {
       return $img;
     }
 
-    const isHorizontal = this.orientation[0] === 0;
-    const isBow = segmentIndex === 0;
-    const isStern = segmentIndex === segmentLength - 1;
+    const isHorizontal = this.orientation === HORIZONTAL;
 
-    const rotationClass = isHorizontal ? "" : "rotate-90";
-    let offsetClass;
+    const center =
+      segmentLength % 2 === 0
+        ? segmentLength / 2 - 0.5
+        : Math.floor(segmentLength / 2);
 
-    if (isHorizontal) {
-      offsetClass = isBow ? `translate-x-[2px]` : `-translate-x-[2px]`;
-    } else {
-      offsetClass = isStern ? `-translate-y-[2px]` : `translate-y-[2px]`;
-    }
+    const distance = Math.abs(segmentIndex - center);
+    const base = segmentLength % 2 === 0 ? 2 : 0;
+    const offset = (base + distance * 4) * (segmentIndex < center ? 1 : -1);
 
-    $img.className =
-      `inset-0 w-full h-full object-cover pointer-events-none ${rotationClass} ${offsetClass}`.trim();
+    const x = isHorizontal ? offset : 0;
+    const y = isHorizontal ? 0 : offset;
+
+    $img.className = "inset-0 w-full h-full object-cover pointer-events-none";
+    $img.style.transform = `translate(${x}px, ${y}px)${isHorizontal ? "" : " rotate(90deg)"}`;
 
     return $img;
   },
