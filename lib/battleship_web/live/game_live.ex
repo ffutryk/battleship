@@ -2,8 +2,6 @@ defmodule BattleshipWeb.GameLive do
   use BattleshipWeb, :live_view
 
   alias Battleship.Game.{Server, State}
-  alias Battleship.Game.Core.Board
-  alias Phoenix.LiveView.JS
 
   @impl true
   def mount(%{"id" => id}, session, socket) do
@@ -28,7 +26,7 @@ defmodule BattleshipWeb.GameLive do
         Phoenix.PubSub.subscribe(Battleship.PubSub, "game:#{state.id}")
         Server.connect(game_id, player_token, self())
 
-        {:ok, assign(socket, state: state, player_id: player_token, orientation: :vertical)}
+        {:ok, assign(socket, state: state, player_id: player_token)}
     end
   end
 
@@ -57,9 +55,8 @@ defmodule BattleshipWeb.GameLive do
           <h2>Build your fleet</h2>
           <div class="flex flex-col lg:flex-row items-center lg:items-start gap-8">
             <div
-              data-orientation={@orientation}
-              data-disabled={to_string(Board.ready?(@board))}
-              class="flex flex-col gap-1"
+              id="board"
+              class="flex flex-col gap-1 select-none"
             >
               <%= for row <- 0..9 do %>
                 <div class="flex gap-1">
@@ -83,25 +80,8 @@ defmodule BattleshipWeb.GameLive do
         <div class="flex flex-col justify-center items-center gap-8">
           <.timer id="timer-desktop" class="hidden md:flex" remaining_ms={@placement_remaining_ms} />
           <div class="flex gap-4">
-            <.button
-              id="confirm-btn"
-              class="btn-pixel w-fit px-8"
-              disabled={!Board.ready?(@board)}
-              phx-click="confirm_placement"
-              phx-window-keydown={
-                JS.push("confirm_placement") |> JS.add_class("is-active", to: "#confirm-btn")
-              }
-              phx-window-keyup={JS.remove_class("is-active", to: "#confirm-btn")}
-              phx-key="Enter"
-            >Confirm</.button>
-            <.button
-              id="rotate-btn"
-              class="btn-pixel-icon"
-              phx-click="rotate"
-              phx-window-keydown={JS.push("rotate") |> JS.add_class("is-active", to: "#rotate-btn")}
-              phx-window-keyup={JS.remove_class("is-active", to: "#rotate-btn")}
-              phx-key="R"
-            >
+            <.button id="confirm-btn" class="btn-pixel w-fit px-8" disabled>Confirm</.button>
+            <.button id="rotate-btn" class="btn-pixel-icon">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 104 65"
@@ -121,7 +101,7 @@ defmodule BattleshipWeb.GameLive do
               </svg>
             </.button>
           </div>
-          <p class="text-center">{length(@board.available_ships)} remaining</p>
+          <p class="text-center"><span id="remaining-count">5</span> remaining</p>
         </div>
       </div>
     </main>
@@ -185,17 +165,18 @@ defmodule BattleshipWeb.GameLive do
   end
 
   @impl true
-  def handle_event("rotate", _, socket) when socket.assigns.orientation == :vertical,
-    do: {:noreply, assign(socket, :orientation, :horizontal)}
+  def handle_event("confirm_placement", %{"ships" => ships}, socket) do
+    player_id = socket.assigns.player_id
+    game_id = socket.assigns.state.id
 
-  @impl true
-  def handle_event("rotate", _, socket) when socket.assigns.orientation == :horizontal,
-    do: {:noreply, assign(socket, :orientation, :vertical)}
+    Enum.each(ships, fn ship_coords ->
+      coords = Enum.map(ship_coords, fn [r, c] -> {r, c} end)
+      Server.place_ship(game_id, player_id, coords)
+    end)
 
-  @impl true
-  def handle_event("rotate", _, socket) when socket.assigns.orientation == :vertical,
-    do: {:noreply, assign(socket, :orientation, :horizontal)}
-
-  @impl true
-  def handle_event("confirm_placement", _, socket), do: {:noreply, socket}
+    case Server.confirm_placement(game_id, player_id) do
+      :ok -> {:noreply, socket}
+      {:error, _reason} -> {:noreply, put_flash(socket, :error, "Invalid fleet")}
+    end
+  end
 end
