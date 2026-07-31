@@ -4,7 +4,7 @@ defmodule BattleshipWeb.Game.ShipSprites do
   alias Battleship.Game.Core.Ship
 
   @sprite_files %{
-    2 => ["destroyer_bow.png", "destroyer_stern.png"]
+    2 => ["frigate_bow.png", "frigate_stern.png"]
   }
 
   def for_length(length) do
