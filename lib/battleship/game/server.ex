@@ -12,10 +12,10 @@ defmodule Battleship.Game.Server do
     GenServer.start_link(__MODULE__, {game_id, players}, name: GameRegistry.via_tuple(game_id))
   end
 
-  def get_state(game_id) do
+  def view(game_id, player_id) do
     case GenServer.whereis(GameRegistry.via_tuple(game_id)) do
-      nil -> nil
-      pid -> GenServer.call(pid, :get_state)
+      nil -> {:error, :game_not_found}
+      pid -> GenServer.call(pid, {:view, player_id})
     end
   end
 
@@ -37,7 +37,14 @@ defmodule Battleship.Game.Server do
   end
 
   @impl true
-  def handle_call(:get_state, _from, state), do: {:reply, state, state}
+  def handle_call({:view, player_id}, _from, state) do
+    if Map.has_key?(state.players, player_id) do
+      view = build_view(state, player_id)
+      {:reply, {:ok, view}, state}
+    else
+      {:reply, {:error, :not_allowed}, state}
+    end
+  end
 
   @impl true
   def handle_call({:place_ship, player_id, coords}, _from, %State{phase: :placement} = state) do
@@ -130,6 +137,15 @@ defmodule Battleship.Game.Server do
     |> Map.put(:boards, boards)
     |> Map.put(:timer_ref, nil)
     |> State.next_phase()
+  end
+
+  defp build_view(state, player_id) do
+    %{
+      game_id: state.id,
+      phase: state.phase,
+      player_board: state.boards[player_id],
+      player_shots: State.opponent_board(state, player_id).shots
+    }
   end
 
   defp broadcast(id, message), do: Phoenix.PubSub.broadcast(Battleship.PubSub, topic(id), message)
