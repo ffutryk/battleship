@@ -11,8 +11,9 @@ defmodule Battleship.Game.Core.Board do
   end
 
   def place_ship(board, coords) do
-    ship = %Ship{coordinates: MapSet.new(coords)}
-    ship_length = length(coords)
+    coords = MapSet.new(coords)
+    ship = %Ship{coordinates: coords}
+    ship_length = Ship.length(ship)
 
     with :ok <- validate_not_empty(coords),
          :ok <- validate_bounds(coords),
@@ -50,7 +51,7 @@ defmodule Battleship.Game.Core.Board do
   end
 
   defp validate_not_empty(coords) do
-    if coords == [], do: {:error, :empty_ship}, else: :ok
+    if MapSet.size(coords) == 0, do: {:error, :empty_ship}, else: :ok
   end
 
   defp validate_bounds(coords) do
@@ -69,7 +70,7 @@ defmodule Battleship.Game.Core.Board do
     end
   end
 
-  defp validate_straight_line(coords) when length(coords) in 1..5 do
+  defp validate_straight_line(coords) do
     pairs =
       coords
       |> Enum.sort()
@@ -78,14 +79,8 @@ defmodule Battleship.Game.Core.Board do
     is_horizontal = Enum.all?(pairs, fn [{r1, c1}, {r2, c2}] -> r1 == r2 and c2 == c1 + 1 end)
     is_vertical = Enum.all?(pairs, fn [{r1, c1}, {r2, c2}] -> c1 == c2 and r2 == r1 + 1 end)
 
-    if is_horizontal or is_vertical do
-      :ok
-    else
-      {:error, :invalid_ship_shape}
-    end
+    if is_horizontal or is_vertical, do: :ok, else: {:error, :invalid_ship_shape}
   end
-
-  defp validate_straight_line(_), do: {:error, :invalid_ship_shape}
 
   defp within_bounds?({row, col}) do
     within_bounds?(row) and within_bounds?(col)
