@@ -1,30 +1,30 @@
 defmodule Battleship.Game.Coordinator do
   alias Battleship.Game.Supervisor
 
-  def create_game(players) do
+  def create_game(player_ids) do
     game_id = System.unique_integer([:positive])
 
-    case Supervisor.start_game(game_id, players) do
+    case Supervisor.start_game(game_id, player_ids) do
       {:ok, _pid} ->
-        notify_players(players, {:match_found, game_id})
+        notify_players(player_ids, {:match_found, game_id})
         {:ok, game_id}
 
       {:error, reason} ->
-        notify_players(players, {:error, reason})
+        notify_players(player_ids, {:error, reason})
         {:error, reason}
     end
   end
 
-  defp notify_players(players, message) do
-    Enum.each(players, fn player ->
-      broadcast_matchmaking(player, message)
+  defp notify_players(player_ids, message) do
+    Enum.each(player_ids, fn id ->
+      broadcast_matchmaking(id, message)
     end)
   end
 
-  defp broadcast_matchmaking(player, message) do
+  defp broadcast_matchmaking(id, message) do
     Phoenix.PubSub.broadcast(
       Battleship.PubSub,
-      "matchmaking:#{player.id}",
+      "matchmaking:#{id}",
       message
     )
   end
