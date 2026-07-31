@@ -4,6 +4,7 @@ defmodule BattleshipWeb.Game.ShipSprites do
   alias Battleship.Game.Core.Ship
 
   @sprite_files %{
+    1 => ["submarine.png"],
     2 => ["frigate_bow.png", "frigate_stern.png"]
   }
 
