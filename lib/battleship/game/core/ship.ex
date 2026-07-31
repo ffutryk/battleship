@@ -1,7 +1,7 @@
 defmodule Battleship.Game.Core.Ship do
   defstruct coordinates: MapSet.new()
 
-  @valid_lengths 1..4
+  @valid_lengths 1..5
 
   def valid_lengths, do: @valid_lengths
 

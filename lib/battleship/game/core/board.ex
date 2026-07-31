@@ -1,6 +1,6 @@
 defmodule Battleship.Game.Core.Board do
   @size 9
-  @fleet [1, 2, 3, 4, 3]
+  @fleet [1, 2, 3, 4, 5]
 
   defstruct ships: [], shots: MapSet.new(), available_ships: @fleet
 
