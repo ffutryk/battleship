@@ -143,7 +143,12 @@
     @apply translate-y-[2px] bg-[#E07A5F] shadow-[0px_6px_0px_var(--color-hull-shadow)];
   }
 
-  .btn-pixel:active {
+  .btn-pixel:active,
+  .btn-pixel.is-active {
+    @apply translate-y-[8px] bg-hull shadow-[0px_0px_0px_var(--color-hull-shadow)];
+  }
+
+  .btn-pixel:disabled {
     @apply translate-y-[8px] bg-hull shadow-[0px_0px_0px_var(--color-hull-shadow)];
   }
 
@@ -156,7 +161,8 @@
   .btn-pixel-icon:hover {
     @apply translate-y-[2px] bg-[#E07A5F] shadow-[0px_6px_0px_var(--color-hull-shadow)];
   }
-  .btn-pixel-icon:active {
+  .btn-pixel-icon:active,
+  .btn-pixel-icon.is-active {
     @apply translate-y-[8px] bg-hull shadow-[0px_0px_0px_var(--color-hull-shadow)];
   }
 

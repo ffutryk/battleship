@@ -2,6 +2,8 @@ defmodule BattleshipWeb.GameLive do
   use BattleshipWeb, :live_view
 
   alias Battleship.Game.{Server, State}
+  alias Battleship.Game.Core.Board
+  alias Phoenix.LiveView.JS
 
   @impl true
   def mount(%{"id" => id}, session, socket) do
@@ -26,7 +28,7 @@ defmodule BattleshipWeb.GameLive do
         Phoenix.PubSub.subscribe(Battleship.PubSub, "game:#{state.id}")
         Server.connect(game_id, player_token, self())
 
-        {:ok, assign(socket, state: state, player_id: player_token)}
+        {:ok, assign(socket, state: state, player_id: player_token, orientation: :vertical)}
     end
   end
 
@@ -44,6 +46,9 @@ defmodule BattleshipWeb.GameLive do
   end
 
   defp placement_phase(assigns) do
+    board = player_board(assigns.state, assigns.player_id)
+    assigns = assign(assigns, :board, board)
+
     ~H"""
     <main class="h-full flex flex-col items-center justify-center">
       <.timer id="timer-mobile" class="flex md:hidden mb-8" remaining_ms={@placement_remaining_ms} />
@@ -51,7 +56,11 @@ defmodule BattleshipWeb.GameLive do
         <div class="flex flex-col gap-2 items-center justify-center">
           <h2>Build your fleet</h2>
           <div class="flex flex-col lg:flex-row items-center lg:items-start gap-8">
-            <div class="flex flex-col gap-1">
+            <div
+              data-orientation={@orientation}
+              data-disabled={to_string(Board.ready?(@board))}
+              class="flex flex-col gap-1"
+            >
               <%= for row <- 0..9 do %>
                 <div class="flex gap-1">
                   <div class="grid-cell grid-label">{row_label(row)}</div>
@@ -74,8 +83,25 @@ defmodule BattleshipWeb.GameLive do
         <div class="flex flex-col justify-center items-center gap-8">
           <.timer id="timer-desktop" class="hidden md:flex" remaining_ms={@placement_remaining_ms} />
           <div class="flex gap-4">
-            <.button class="btn-pixel w-fit px-8">Confirm</.button>
-            <.button class="btn-pixel-icon">
+            <.button
+              id="confirm-btn"
+              class="btn-pixel w-fit px-8"
+              disabled={!Board.ready?(@board)}
+              phx-click="confirm_placement"
+              phx-window-keydown={
+                JS.push("confirm_placement") |> JS.add_class("is-active", to: "#confirm-btn")
+              }
+              phx-window-keyup={JS.remove_class("is-active", to: "#confirm-btn")}
+              phx-key="Enter"
+            >Confirm</.button>
+            <.button
+              id="rotate-btn"
+              class="btn-pixel-icon"
+              phx-click="rotate"
+              phx-window-keydown={JS.push("rotate") |> JS.add_class("is-active", to: "#rotate-btn")}
+              phx-window-keyup={JS.remove_class("is-active", to: "#rotate-btn")}
+              phx-key="R"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 104 65"
@@ -95,7 +121,7 @@ defmodule BattleshipWeb.GameLive do
               </svg>
             </.button>
           </div>
-          <p class="text-center">{5} remaining</p>
+          <p class="text-center">{length(@board.available_ships)} remaining</p>
         </div>
       </div>
     </main>
@@ -153,4 +179,23 @@ defmodule BattleshipWeb.GameLive do
   def handle_info({:phase_changed, new_phase}, socket) do
     {:noreply, update(socket, :state, &%{&1 | phase: new_phase})}
   end
+
+  defp player_board(%State{boards: boards}, player_id) do
+    Map.get(boards, player_id)
+  end
+
+  @impl true
+  def handle_event("rotate", _, socket) when socket.assigns.orientation == :vertical,
+    do: {:noreply, assign(socket, :orientation, :horizontal)}
+
+  @impl true
+  def handle_event("rotate", _, socket) when socket.assigns.orientation == :horizontal,
+    do: {:noreply, assign(socket, :orientation, :vertical)}
+
+  @impl true
+  def handle_event("rotate", _, socket) when socket.assigns.orientation == :vertical,
+    do: {:noreply, assign(socket, :orientation, :horizontal)}
+
+  @impl true
+  def handle_event("confirm_placement", _, socket), do: {:noreply, socket}
 end
