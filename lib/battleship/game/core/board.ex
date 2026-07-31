@@ -12,7 +12,7 @@ defmodule Battleship.Game.Core.Board do
 
   def place_ship(board, coords) do
     ship = %Ship{coordinates: MapSet.new(coords)}
-    ship_length = length(coords)
+    ship_length = Ship.length(ship)
 
     with :ok <- validate_not_empty(coords),
          :ok <- validate_bounds(coords),
