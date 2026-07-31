@@ -6,7 +6,8 @@ defmodule BattleshipWeb.Game.ShipSprites do
   @sprite_files %{
     1 => ["submarine.png"],
     2 => ["frigate_bow.png", "frigate_stern.png"],
-    3 => ["destroyer_bow.png", "destroyer_mid.png", "destroyer_stern.png"]
+    3 => ["destroyer_bow.png", "destroyer_mid.png", "destroyer_stern.png"],
+    4 => ["cruiser_bow.png", "cruiser_mid_1.png", "cruiser_mid_2.png", "cruiser_stern.png"]
   }
 
   def for_length(length) do
