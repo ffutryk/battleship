@@ -69,13 +69,23 @@ defmodule Battleship.Game.Core.Board do
     end
   end
 
-  defp validate_straight_line(coords) do
-    case Enum.sort(coords) do
-      [{r1, c1}, {r2, c2}] when r1 == r2 and c2 == c1 + 1 -> :ok
-      [{r1, c1}, {r2, c2}] when c1 == c2 and r2 == r1 + 1 -> :ok
-      _ -> {:error, :invalid_ship_shape}
+  defp validate_straight_line(coords) when length(coords) in 1..5 do
+    pairs =
+      coords
+      |> Enum.sort()
+      |> Enum.chunk_every(2, 1, :discard)
+
+    is_horizontal = Enum.all?(pairs, fn [{r1, c1}, {r2, c2}] -> r1 == r2 and c2 == c1 + 1 end)
+    is_vertical = Enum.all?(pairs, fn [{r1, c1}, {r2, c2}] -> c1 == c2 and r2 == r1 + 1 end)
+
+    if is_horizontal or is_vertical do
+      :ok
+    else
+      {:error, :invalid_ship_shape}
     end
   end
+
+  defp validate_straight_line(_), do: {:error, :invalid_ship_shape}
 
   defp within_bounds?({row, col}) do
     within_bounds?(row) and within_bounds?(col)
