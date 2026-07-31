@@ -25,12 +25,13 @@ import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/battleship"
 import topbar from "../vendor/topbar"
 import { Timer } from "./hooks/timer"
+import { FleetPlacement } from "./hooks/fleet_placement"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks, Timer},
+  hooks: {...colocatedHooks, Timer, FleetPlacement},
 })
 
 // Show progress bar on live navigation and form submits

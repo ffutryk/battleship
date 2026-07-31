@@ -129,6 +129,14 @@
       0.06em -0.06em 0 white,
       -0.06em -0.06em 0 white;
   }
+
+  .grid-cell.hover.valid {
+      @apply bg-emerald-500/70;
+  }
+
+  .grid-cell.hover.invalid {
+      @apply bg-rose-500/70;
+  }
 }
 
 @layer components {

@@ -45,12 +45,26 @@ defmodule BattleshipWeb.GameLive do
 
   defp placement_phase(assigns) do
     board = player_board(assigns.state, assigns.player_id)
-    assigns = assign(assigns, :board, board)
+
+    fleet =
+      Enum.map(board.available_ships, fn length ->
+        %{length: length, sprites: BattleshipWeb.Game.ShipSprites.for_length(length)}
+      end)
+
+    assigns =
+      assigns
+      |> assign(:board, board)
+      |> assign(:fleet, fleet)
 
     ~H"""
     <main class="h-full flex flex-col items-center justify-center">
       <.timer id="timer-mobile" class="flex md:hidden mb-8" remaining_ms={@placement_remaining_ms} />
-      <div class="flex flex-col md:flex-row gap-8">
+      <div
+        id="panel"
+        phx-hook="FleetPlacement"
+        data-fleet={Jason.encode!(@fleet)}
+        class="flex flex-col md:flex-row gap-8"
+      >
         <div class="flex flex-col gap-2 items-center justify-center">
           <h2>Build your fleet</h2>
           <div class="flex flex-col lg:flex-row items-center lg:items-start gap-8">
@@ -62,7 +76,11 @@ defmodule BattleshipWeb.GameLive do
                 <div class="flex gap-1">
                   <div class="grid-cell grid-label">{row_label(row)}</div>
                   <%= for col <- 0..9 do %>
-                    <div class="grid-cell bg-grid hover:brightness-125 cursor-pointer" />
+                    <div
+                      data-row={row}
+                      data-col={col}
+                      class="grid-cell bg-grid cursor-pointer"
+                    />
                   <% end %>
                   <div class="grid-cell"></div>
                 </div>
