@@ -146,7 +146,14 @@ defmodule Battleship.Game.Server do
       player_board: state.boards[player_id],
       player_shots: State.opponent_board(state, player_id).shots
     }
+    |> maybe_put_remaining_ms(state)
   end
+
+  defp maybe_put_remaining_ms(view, %State{phase: :placement, timer_ref: ref})
+       when not is_nil(ref),
+       do: Map.put(view, :remaining_ms, Process.read_timer(ref) || 0)
+
+  defp maybe_put_remaining_ms(view, _state), do: view
 
   defp broadcast(id, message), do: Phoenix.PubSub.broadcast(Battleship.PubSub, topic(id), message)
   defp topic(id), do: "game:#{id}"
