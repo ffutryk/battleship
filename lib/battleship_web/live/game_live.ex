@@ -1,7 +1,7 @@
 defmodule BattleshipWeb.GameLive do
   use BattleshipWeb, :live_view
 
-  alias Battleship.Game.{Server, State}
+  alias Battleship.Game.Server
 
   @impl true
   def mount(%{"id" => id}, session, socket) do
@@ -13,27 +13,15 @@ defmodule BattleshipWeb.GameLive do
         _ -> id
       end
 
-    case Server.get_state(game_id) do
-      nil ->
-        socket =
-          socket
-          |> put_flash(:error, "The match doesn't exist or it already ended.")
-          |> push_navigate(to: "/")
+    socket = assign(socket, game_id: game_id, player_id: player_token)
 
-        {:ok, socket}
-
-      state ->
-        Phoenix.PubSub.subscribe(Battleship.PubSub, "game:#{state.id}")
-        Server.connect(game_id, player_token, self())
-
-        {:ok, assign(socket, state: state, player_id: player_token)}
-    end
+    handle_view(Server.view(game_id, player_token), socket)
   end
 
   @impl true
-  def render(%{state: %State{phase: :waiting_opponent}} = assigns), do: waiting_phase(assigns)
-  def render(%{state: %State{phase: :placement}} = assigns), do: placement_phase(assigns)
-  def render(%{state: %State{phase: :battle}} = assigns), do: battle_phase(assigns)
+  def render(%{view: %{phase: :waiting_opponent}} = assigns), do: waiting_phase(assigns)
+  def render(%{view: %{phase: :placement}} = assigns), do: placement_phase(assigns)
+  def render(%{view: %{phase: :battle}} = assigns), do: battle_phase(assigns)
 
   defp waiting_phase(assigns) do
     ~H"""
@@ -43,9 +31,7 @@ defmodule BattleshipWeb.GameLive do
     """
   end
 
-  defp placement_phase(assigns) do
-    board = player_board(assigns.state, assigns.player_id)
-
+  defp placement_phase(%{view: %{player_board: board}} = assigns) do
     fleet =
       Enum.map(board.available_ships, fn length ->
         %{length: length, sprites: BattleshipWeb.Game.ShipSprites.for_length(length)}
@@ -53,7 +39,6 @@ defmodule BattleshipWeb.GameLive do
 
     assigns =
       assigns
-      |> assign(:board, board)
       |> assign(:fleet, fleet)
 
     ~H"""
@@ -169,23 +154,19 @@ defmodule BattleshipWeb.GameLive do
   def handle_info({:phase_changed, :placement, remaining_ms}, socket) do
     {:noreply,
      socket
-     |> update(:state, &%{&1 | phase: :placement})
+     |> update(:view, &%{&1 | phase: :placement})
      |> assign(:placement_remaining_ms, remaining_ms)}
   end
 
   @impl true
   def handle_info({:phase_changed, new_phase}, socket) do
-    {:noreply, update(socket, :state, &%{&1 | phase: new_phase})}
-  end
-
-  defp player_board(%State{boards: boards}, player_id) do
-    Map.get(boards, player_id)
+    {:noreply, update(socket, :view, &%{&1 | phase: new_phase})}
   end
 
   @impl true
   def handle_event("confirm_placement", %{"ships" => ships}, socket) do
     player_id = socket.assigns.player_id
-    game_id = socket.assigns.state.id
+    game_id = socket.assigns.game_id
 
     Enum.each(ships, fn ship_coords ->
       coords = Enum.map(ship_coords, fn [r, c] -> {r, c} end)
@@ -196,5 +177,38 @@ defmodule BattleshipWeb.GameLive do
       :ok -> {:noreply, socket}
       {:error, _reason} -> {:noreply, put_flash(socket, :error, "Invalid fleet")}
     end
+  end
+
+  defp handle_view({:error, :game_not_found}, socket) do
+    socket =
+      socket
+      |> put_flash(:error, "The match doesn't exist or it already ended.")
+      |> push_navigate(to: "/")
+
+    {:ok, socket}
+  end
+
+  defp handle_view({:error, :not_allowed}, socket) do
+    socket =
+      socket
+      |> put_flash(:error, "You don't belong to this game.")
+      |> push_navigate(to: "/")
+
+    {:ok, socket}
+  end
+
+  defp handle_view({:ok, %{phase: :placement, remaining_ms: ms} = view}, socket) do
+    connect_to_gameserver(socket.assigns.game_id, socket.assigns.player_id)
+    {:ok, assign(socket, view: view, placement_remaining_ms: ms)}
+  end
+
+  defp handle_view({:ok, view}, socket) do
+    connect_to_gameserver(socket.assigns.game_id, socket.assigns.player_id)
+    {:ok, assign(socket, view: view)}
+  end
+
+  defp connect_to_gameserver(game_id, player_id) do
+    Phoenix.PubSub.subscribe(Battleship.PubSub, "game:#{game_id}")
+    Server.connect(game_id, player_id, self())
   end
 end

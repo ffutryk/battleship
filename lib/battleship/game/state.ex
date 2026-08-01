@@ -45,6 +45,13 @@ defmodule Battleship.Game.State do
   def all_ready?(%__MODULE__{players: players}),
     do: Enum.all?(players, fn {_id, p} -> p.ready end)
 
+  def opponent_board(%__MODULE__{boards: boards}, player_id) do
+    case Map.values(Map.delete(boards, player_id)) do
+      [board] -> board
+      other -> raise "expected exactly one opponent, got #{length(other)}"
+    end
+  end
+
   defp update_player(%__MODULE__{players: players} = state, player_id, fun) do
     case Map.fetch(players, player_id) do
       {:ok, player} -> %{state | players: Map.put(players, player_id, fun.(player))}
