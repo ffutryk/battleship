@@ -174,11 +174,15 @@ defmodule Battleship.Game.Server do
   end
 
   defp build_view(state, player_id) do
+    player_board = state.boards[player_id]
+    opponent_board = State.opponent_board(state, player_id)
+
     %{
       game_id: state.id,
       phase: state.phase,
       player_board: state.boards[player_id],
-      player_shots: State.opponent_board(state, player_id).shots,
+      player_shots: Board.shot_results(opponent_board),
+      enemy_shots: Board.shot_results(player_board),
       is_turn?: state.battle_turn == player_id
     }
     |> maybe_put_remaining_ms(state)

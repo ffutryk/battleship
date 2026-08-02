@@ -58,6 +58,17 @@ defmodule Battleship.Game.Core.Board do
     end
   end
 
+  def shot_results(%__MODULE__{ships: ships, shots: shots}) do
+    Map.new(shots, fn coord -> {coord, result_at(ships, shots, coord)} end)
+  end
+
+  defp result_at(ships, shots, coord) do
+    case Enum.find(ships, &Ship.hit?(&1, MapSet.new([coord]))) do
+      nil -> :miss
+      ship -> if Ship.sunk?(ship, shots), do: :sunk, else: :hit
+    end
+  end
+
   defp validate_not_empty(coords) do
     if MapSet.size(coords) == 0, do: {:error, :empty_ship}, else: :ok
   end
