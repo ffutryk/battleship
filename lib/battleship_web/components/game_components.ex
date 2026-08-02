@@ -4,6 +4,7 @@ defmodule BattleshipWeb.GameComponents do
   attr :id, :string, required: true
   attr :class, :string, default: nil
   attr :phx_hook, :string, default: nil
+  attr :phx_click, :string, default: nil
   attr :cell_class, :string, default: nil
 
   def board(assigns) do
@@ -20,6 +21,9 @@ defmodule BattleshipWeb.GameComponents do
             <div
               data-row={row}
               data-col={col}
+              phx-value-row={row}
+              phx-value-col={col}
+              phx-click={@phx_click}
               class={["grid-cell bg-grid cursor-pointer", @cell_class]}
             />
           <% end %>

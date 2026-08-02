@@ -87,6 +87,7 @@ defmodule BattleshipWeb.GameLive do
               id="enemy-board"
               phx_hook="HoverTracker"
               cell_class="hover:brightness-150"
+              phx_click={if @view.is_turn?, do: "fire"}
             />
           </div>
         </div>
@@ -135,6 +136,13 @@ defmodule BattleshipWeb.GameLive do
   end
 
   @impl true
+  def handle_info(:shot, socket) do
+    %{game_id: game_id, player_id: player_id} = socket.assigns
+    socket = apply_view(socket, Server.view(game_id, player_id))
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("hover_cell", %{"row" => row, "col" => col}, socket) do
     %{game_id: game_id, player_id: player_id} = socket.assigns
     coord = {row, col}
@@ -161,6 +169,21 @@ defmodule BattleshipWeb.GameLive do
     case Server.confirm_placement(game_id, player_id) do
       :ok -> {:noreply, socket}
       {:error, _reason} -> {:noreply, put_flash(socket, :error, "Invalid fleet")}
+    end
+  end
+
+  @impl true
+  def handle_event("fire", %{"row" => row, "col" => col}, socket) do
+    %{game_id: game_id, player_id: player_id} = socket.assigns
+    coord = {String.to_integer(row), String.to_integer(col)}
+
+    case Server.shoot_at(game_id, player_id, coord) do
+      {:error, _reason} ->
+        {:noreply, socket}
+
+      _shot_state ->
+        socket = apply_view(socket, Server.view(game_id, player_id))
+        {:noreply, socket}
     end
   end
 
