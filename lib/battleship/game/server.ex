@@ -31,6 +31,10 @@ defmodule Battleship.Game.Server do
     GenServer.call(GameRegistry.via_tuple(game_id), {:confirm_placement, player_id})
   end
 
+  def shoot_at(game_id, shooter_id, shot_coords) do
+    GenServer.call(GameRegistry.via_tuple(game_id), {:shoot_at, shooter_id, shot_coords})
+  end
+
   @impl true
   def init({game_id, players}) do
     {:ok, State.init(game_id, players)}
@@ -108,6 +112,26 @@ defmodule Battleship.Game.Server do
   end
 
   @impl true
+  def handle_call({:shoot_at, shooter_id, shot_coords}, _from, %State{phase: :battle} = state) do
+    with :ok <- validate_turn(state, shooter_id),
+         {:ok, opponent_id, updated_board, shot_state} <-
+           fire_shot(state, shooter_id, shot_coords) do
+      new_state = put_board(state, opponent_id, updated_board)
+
+      broadcast(state.id, {:shot, shooter_id, opponent_id, shot_coords, shot_state})
+
+      {:reply, shot_state, progress(new_state)}
+    else
+      {:error, _} = error -> {:reply, error, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:shoot_at, _, _}, _from, state) do
+    {:reply, {:error, :not_battle_phase}, state}
+  end
+
+  @impl true
   def handle_info(:placement_timeout, %State{phase: :placement} = state) do
     {:noreply, progress(state)}
   end
@@ -139,6 +163,16 @@ defmodule Battleship.Game.Server do
     |> State.next_phase()
   end
 
+  defp progress(%State{phase: :battle} = state) do
+    if Enum.any?(state.boards, fn {_id, board} -> Board.all_sunken?(board) end) do
+      new_state = State.next_phase(state)
+      broadcast(state.id, {:phase_changed, :game_over, new_state.winner_id})
+      new_state
+    else
+      State.next_turn(state)
+    end
+  end
+
   defp build_view(state, player_id) do
     %{
       game_id: state.id,
@@ -147,6 +181,25 @@ defmodule Battleship.Game.Server do
       player_shots: State.opponent_board(state, player_id).shots
     }
     |> maybe_put_remaining_ms(state)
+    |> maybe_put_winner(state)
+  end
+
+  defp fire_shot(state, shooter_id, shot_coords) do
+    opponent_id = State.opponent_id(state, shooter_id)
+    board = Map.fetch!(state.boards, opponent_id)
+
+    case Board.receive_shot(board, shot_coords) do
+      {:error, _} = error -> error
+      {updated_board, shot_state} -> {:ok, opponent_id, updated_board, shot_state}
+    end
+  end
+
+  defp validate_turn(%State{battle_turn: battle_turn}, shooter_id) do
+    if shooter_id == battle_turn, do: :ok, else: {:error, :not_allowed}
+  end
+
+  defp put_board(state, player_id, board) do
+    %{state | boards: Map.put(state.boards, player_id, board)}
   end
 
   defp maybe_put_remaining_ms(view, %State{phase: :placement, timer_ref: ref})
@@ -154,6 +207,11 @@ defmodule Battleship.Game.Server do
        do: Map.put(view, :remaining_ms, Process.read_timer(ref) || 0)
 
   defp maybe_put_remaining_ms(view, _state), do: view
+
+  defp maybe_put_winner(view, %State{phase: :game_over, winner_id: winner_id}),
+    do: Map.put(view, :winner_id, winner_id)
+
+  defp maybe_put_winner(view, _state), do: view
 
   defp broadcast(id, message), do: Phoenix.PubSub.broadcast(Battleship.PubSub, topic(id), message)
   defp topic(id), do: "game:#{id}"
