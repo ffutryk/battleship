@@ -118,7 +118,7 @@ defmodule Battleship.Game.Server do
            fire_shot(state, shooter_id, shot_coords) do
       new_state = put_board(state, opponent_id, updated_board)
 
-      broadcast(state.id, {:shot, shooter_id, opponent_id, shot_coords, shot_state})
+      broadcast(state.id, :shot)
 
       {:reply, shot_state, progress(new_state)}
     else
