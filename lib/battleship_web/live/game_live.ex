@@ -2,6 +2,7 @@ defmodule BattleshipWeb.GameLive do
   use BattleshipWeb, :live_view
 
   alias Battleship.Game.Server
+  import BattleshipWeb.GameComponents
 
   @impl true
   def mount(%{"id" => id}, session, socket) do
@@ -53,31 +54,7 @@ defmodule BattleshipWeb.GameLive do
         <div class="flex flex-col gap-2 items-center justify-center">
           <h2>Build your fleet</h2>
           <div class="flex flex-col lg:flex-row items-center lg:items-start gap-8">
-            <div
-              id="board"
-              class="flex flex-col gap-1 select-none"
-            >
-              <%= for row <- 0..9 do %>
-                <div class="flex gap-1">
-                  <div class="grid-cell grid-label">{row_label(row)}</div>
-                  <%= for col <- 0..9 do %>
-                    <div
-                      data-row={row}
-                      data-col={col}
-                      class="grid-cell bg-grid cursor-pointer"
-                    />
-                  <% end %>
-                  <div class="grid-cell"></div>
-                </div>
-              <% end %>
-              <div class="flex gap-1">
-                <div class="grid-cell"></div>
-                <%= for col <- 0..9 do %>
-                  <div class="grid-cell grid-label">{col + 1}</div>
-                <% end %>
-                <div class="grid-cell"></div>
-              </div>
-            </div>
+            <.board id="board" />
           </div>
         </div>
         <div class="flex flex-col justify-center items-center gap-8">
@@ -85,23 +62,7 @@ defmodule BattleshipWeb.GameLive do
           <div class="flex gap-4">
             <.button id="confirm-btn" class="btn-pixel w-fit px-8" disabled>Confirm</.button>
             <.button id="rotate-btn" class="btn-pixel-icon">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 104 65"
-                fill="currentColor"
-                class="h-8 w-8"
-              >
-                <rect x="13" y="13" width="13" height="39" />
-                <rect y="13" width="13" height="13" />
-                <rect x="13" width="13" height="13" />
-                <rect x="26" y="13" width="13" height="13" />
-                <rect x="26" y="52" width="26" height="13" />
-                <rect x="78" y="13" width="13" height="39" />
-                <rect x="91" y="39" width="13" height="13" />
-                <rect x="78" y="52" width="13" height="13" />
-                <rect x="65" y="39" width="13" height="13" />
-                <rect x="52" width="26" height="13" />
-              </svg>
+              <.rotate_icon />
             </.button>
           </div>
           <p class="text-center"><span id="remaining-count">5</span> remaining</p>
@@ -118,37 +79,6 @@ defmodule BattleshipWeb.GameLive do
     </main>
     """
   end
-
-  defp timer(assigns) do
-    ~H"""
-    <div
-      id={@id}
-      phx-hook="Timer"
-      data-remaining-ms={@remaining_ms}
-      data-duration-s="30"
-      class={["relative items-center justify-center w-32 h-32", Map.get(assigns, :class, "flex")]}
-    >
-      <svg class="absolute inset-0 w-full h-full rotate-90" viewBox="0 0 100 100">
-        <rect
-          data-role="progress"
-          x="5"
-          y="5"
-          width="90"
-          height="90"
-          fill="none"
-          stroke="white"
-          stroke-width="8"
-          pathLength="100"
-          stroke-dasharray="100"
-          stroke-dashoffset="0"
-        />
-      </svg>
-      <span data-role="seconds" class="text-7xl tracking-[-0.2em] -translate-x-1.5">30</span>
-    </div>
-    """
-  end
-
-  defp row_label(row), do: Enum.at(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"], row)
 
   @impl true
   def handle_info({:phase_changed, :placement, remaining_ms}, socket) do
