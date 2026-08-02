@@ -1,8 +1,6 @@
 defmodule Battleship.Matchmaking.Queue do
   use GenServer
 
-  alias Battleship.Game.Coordinator
-
   def start_link(args), do: GenServer.start_link(__MODULE__, args, name: __MODULE__)
 
   def join_queue(player_id, pid),
@@ -47,7 +45,9 @@ defmodule Battleship.Matchmaking.Queue do
   end
 
   defp process_join({{:value, {opponent, opponent_ref}}, remaining}, {player_id, player_ref}) do
-    Coordinator.create_game([opponent, player_id])
+    Task.Supervisor.start_child(Battleship.TaskSupervisor, fn ->
+      create_game([opponent, player_id])
+    end)
 
     [player_ref, opponent_ref] |> Enum.each(&Process.demonitor(&1, [:flush]))
 
@@ -63,5 +63,22 @@ defmodule Battleship.Matchmaking.Queue do
       )
 
     {:noreply, new_queue}
+  end
+
+  defp create_game(player_ids) do
+    game_id = System.unique_integer([:positive])
+
+    case Battleship.Game.Supervisor.start_game(game_id, player_ids) do
+      {:ok, _pid} -> notify_players(player_ids, {:match_found, game_id})
+      {:error, reason} -> notify_players(player_ids, {:error, reason})
+    end
+  end
+
+  defp notify_players(player_ids, message) do
+    Enum.each(player_ids, &broadcast(&1, message))
+  end
+
+  defp broadcast(id, message) do
+    Phoenix.PubSub.broadcast(Battleship.PubSub, "matchmaking:#{id}", message)
   end
 end
