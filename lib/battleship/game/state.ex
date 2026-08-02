@@ -1,5 +1,5 @@
 defmodule Battleship.Game.State do
-  defstruct [:id, :phase, :timer_ref, :boards, :players]
+  defstruct [:id, :phase, :timer_ref, :boards, :players, :battle_turn, :winner_id]
 
   alias Battleship.Game.Core.Board
 
@@ -23,12 +23,17 @@ defmodule Battleship.Game.State do
   def next_phase(%__MODULE__{phase: :waiting_opponent} = state),
     do: %{state | phase: :placement}
 
-  def next_phase(%__MODULE__{phase: :placement} = state) do
-    %__MODULE__{state | phase: :battle, timer_ref: nil}
+  def next_phase(%__MODULE__{phase: :placement, players: players} = state) do
+    %__MODULE__{
+      state
+      | phase: :battle,
+        timer_ref: nil,
+        battle_turn: Enum.random(Map.keys(players))
+    }
   end
 
-  def next_phase(%__MODULE__{phase: :battle} = state) do
-    %__MODULE__{state | phase: :game_over}
+  def next_phase(%__MODULE__{phase: :battle, battle_turn: shooter_id} = state) do
+    %__MODULE__{state | phase: :game_over, winner_id: shooter_id}
   end
 
   def mark_connected(%__MODULE__{} = state, player_id),
@@ -50,6 +55,17 @@ defmodule Battleship.Game.State do
       [board] -> board
       other -> raise "expected exactly one opponent, got #{length(other)}"
     end
+  end
+
+  def opponent_id(%__MODULE__{players: players}, player_id) do
+    case Enum.reject(Map.keys(players), &(&1 == player_id)) do
+      [id] -> id
+      other -> raise "expected exactly one opponent, got #{length(other)}"
+    end
+  end
+
+  def next_turn(%__MODULE__{players: players, battle_turn: current_id} = state) do
+    %__MODULE__{state | battle_turn: Enum.find(Map.keys(players), &(&1 != current_id))}
   end
 
   defp update_player(%__MODULE__{players: players} = state, player_id, fun) do

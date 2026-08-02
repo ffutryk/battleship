@@ -50,6 +50,14 @@ defmodule Battleship.Game.Core.Board do
     end
   end
 
+  def receive_shot(board, coord) do
+    if within_bounds?(coord) do
+      handle_shot(board, coord)
+    else
+      {:error, :out_of_bounds}
+    end
+  end
+
   defp validate_not_empty(coords) do
     if MapSet.size(coords) == 0, do: {:error, :empty_ship}, else: :ok
   end
@@ -117,5 +125,21 @@ defmodule Battleship.Game.Core.Board do
 
   defp ship_coords(row, col, length, :vertical) do
     Enum.map(0..(length - 1), fn r -> {row + r, col} end)
+  end
+
+  defp handle_shot(board, coord) do
+    new_shots = MapSet.put(board.shots, coord)
+    new_board = %__MODULE__{board | shots: new_shots}
+
+    hit_ship = Enum.find(board.ships, &Ship.hit?(&1, MapSet.new([coord])))
+
+    shot_state =
+      cond do
+        is_nil(hit_ship) -> :miss
+        Ship.sunk?(hit_ship, new_shots) -> :sunk
+        true -> :hit
+      end
+
+    {new_board, shot_state}
   end
 end
