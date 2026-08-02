@@ -14,6 +14,7 @@ defmodule Battleship.Application do
       Battleship.Game.Registry,
       Battleship.Matchmaking.Supervisor,
       Battleship.Game.Supervisor,
+      {Task.Supervisor, name: Battleship.TaskSupervisor},
       # Start a worker by calling: Battleship.Worker.start_link(arg)
       # {Battleship.Worker, arg},
       # Start to serve requests, typically the last entry
