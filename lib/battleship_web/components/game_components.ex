@@ -6,6 +6,8 @@ defmodule BattleshipWeb.GameComponents do
   attr :phx_hook, :string, default: nil
   attr :phx_click, :string, default: nil
   attr :cell_class, :string, default: nil
+  attr :shots, :map, default: %{}
+  attr :own?, :boolean, default: false
 
   def board(assigns) do
     ~H"""
@@ -14,27 +16,25 @@ defmodule BattleshipWeb.GameComponents do
       phx-hook={@phx_hook}
       class={["flex flex-col gap-1 select-none relative", @class]}
     >
-      <%= for row <- 0..9 do %>
-        <div class="flex gap-1">
-          <div class="grid-cell grid-label">{row_label(row)}</div>
-          <%= for col <- 0..9 do %>
-            <div
-              data-row={row}
-              data-col={col}
-              phx-value-row={row}
-              phx-value-col={col}
-              phx-click={@phx_click}
-              class={["grid-cell bg-grid cursor-pointer", @cell_class]}
-            />
-          <% end %>
-          <div class="grid-cell"></div>
+      <div :for={row <- 0..9} class="flex gap-1">
+        <div class="grid-cell grid-label">{row_label(row)}</div>
+        <div
+          :for={col <- 0..9}
+          data-row={row}
+          data-col={col}
+          phx-value-row={row}
+          phx-value-col={col}
+          phx-click={@phx_click}
+          class={["grid-cell bg-grid cursor-pointer", @cell_class]}
+        >
+          <% shot = @shots[{row, col}] %>
+          <img :if={shot} src={BattleshipWeb.Game.PegSprites.sprite_for(shot, @own?)} />
         </div>
-      <% end %>
+        <div class="grid-cell"></div>
+      </div>
       <div class="flex gap-1">
         <div class="grid-cell"></div>
-        <%= for col <- 0..9 do %>
-          <div class="grid-cell grid-label">{col + 1}</div>
-        <% end %>
+        <div :for={col <- 0..9} class="grid-cell grid-label">{col + 1}</div>
         <div class="grid-cell"></div>
       </div>
     </div>

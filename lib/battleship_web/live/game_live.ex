@@ -88,6 +88,7 @@ defmodule BattleshipWeb.GameLive do
               phx_hook="HoverTracker"
               cell_class="hover:brightness-150"
               phx_click={if @view.is_turn?, do: "fire"}
+              shots={@view.player_shots}
             />
           </div>
         </div>
@@ -96,6 +97,8 @@ defmodule BattleshipWeb.GameLive do
             id="own-board"
             phx_hook="OpponentCursor"
             class="[zoom:0.5]"
+            shots={@view.enemy_shots}
+            own?
           />
         </div>
       </div>
