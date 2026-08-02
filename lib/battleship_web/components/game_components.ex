@@ -4,13 +4,14 @@ defmodule BattleshipWeb.GameComponents do
   attr :id, :string, required: true
   attr :class, :string, default: nil
   attr :phx_hook, :string, default: nil
+  attr :cell_class, :string, default: nil
 
   def board(assigns) do
     ~H"""
     <div
       id={@id}
       phx-hook={@phx_hook}
-      class={["flex flex-col gap-1 select-none", @class]}
+      class={["flex flex-col gap-1 select-none relative", @class]}
     >
       <%= for row <- 0..9 do %>
         <div class="flex gap-1">
@@ -19,7 +20,7 @@ defmodule BattleshipWeb.GameComponents do
             <div
               data-row={row}
               data-col={col}
-              class="grid-cell bg-grid cursor-pointer"
+              class={["grid-cell bg-grid cursor-pointer", @cell_class]}
             />
           <% end %>
           <div class="grid-cell"></div>

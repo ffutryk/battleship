@@ -78,7 +78,26 @@ defmodule BattleshipWeb.GameLive do
   defp battle_phase(assigns) do
     ~H"""
     <main class="h-full flex flex-col items-center justify-center">
-      Battle
+      <div class="flex flex-col md:flex-row">
+        <div class="flex flex-col gap-2 items-center justify-center">
+          <h2 :if={@view.is_turn?}>Attack!</h2>
+          <h2 :if={!@view.is_turn?}>Opponent's turn</h2>
+          <div class="flex flex-col lg:flex-row items-center lg:items-start gap-8">
+            <.board
+              id="enemy-board"
+              phx_hook="HoverTracker"
+              cell_class="hover:brightness-150"
+            />
+          </div>
+        </div>
+        <div class="flex flex-col justify-center items-center">
+          <.board
+            id="own-board"
+            phx_hook="OpponentCursor"
+            class="[zoom:0.5]"
+          />
+        </div>
+      </div>
     </main>
     """
   end
@@ -102,6 +121,30 @@ defmodule BattleshipWeb.GameLive do
     socket =
       socket
       |> apply_view(Server.view(game_id, player_id))
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:opponent_hover, from_id, {row, col}}, socket) do
+    if from_id != socket.assigns.player_id do
+      {:noreply, push_event(socket, "opponent_hover", %{row: row, col: col})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("hover_cell", %{"row" => row, "col" => col}, socket) do
+    %{game_id: game_id, player_id: player_id} = socket.assigns
+    coord = {row, col}
+
+    Phoenix.PubSub.broadcast_from(
+      Battleship.PubSub,
+      self(),
+      "game:#{game_id}",
+      {:opponent_hover, player_id, coord}
+    )
 
     {:noreply, socket}
   end
