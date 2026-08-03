@@ -95,7 +95,7 @@ defmodule Battleship.Game.Server do
   def handle_call({:player_connected, player_id, pid}, _from, state) do
     Process.monitor(pid)
 
-    case State.mark_connected(state, player_id) do
+    case State.mark_connected(state, player_id, pid) do
       {:error, _} = error ->
         {:reply, error, state}
 
@@ -138,6 +138,19 @@ defmodule Battleship.Game.Server do
 
   @impl true
   def handle_info(:placement_timeout, state), do: {:noreply, state}
+
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+    disconnected_player_id =
+      Enum.find_value(state.players, fn {id, player_data} ->
+        if Map.get(player_data, :pid) == pid, do: id
+      end)
+
+    new_state =
+      state
+      |> State.mark_disconnected(disconnected_player_id)
+
+    {:noreply, new_state}
+  end
 
   defp progress(%State{phase: :waiting_opponent} = state) do
     timer_ref = Process.send_after(self(), :placement_timeout, @placement_timeout)
