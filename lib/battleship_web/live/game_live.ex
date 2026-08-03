@@ -27,6 +27,7 @@ defmodule BattleshipWeb.GameLive do
   def render(%{view: %{phase: :waiting_opponent}} = assigns), do: waiting_phase(assigns)
   def render(%{view: %{phase: :placement}} = assigns), do: placement_phase(assigns)
   def render(%{view: %{phase: :battle}} = assigns), do: battle_phase(assigns)
+  def render(%{view: %{phase: :game_over}} = assigns), do: battle_phase(assigns)
 
   defp waiting_phase(assigns) do
     ~H"""
@@ -80,7 +81,7 @@ defmodule BattleshipWeb.GameLive do
     assigns = assign(assigns, :own_fleet, ShipSprites.fleet_cells(ships))
 
     ~H"""
-    <main class="h-full flex flex-col items-center justify-center">
+    <main class="relative h-full flex flex-col items-center justify-center">
       <div class="flex flex-col md:flex-row">
         <div class="flex flex-col gap-2 items-center justify-center">
           <h2 :if={@view.is_turn?}>Attack!</h2>
@@ -108,6 +109,23 @@ defmodule BattleshipWeb.GameLive do
           />
         </div>
       </div>
+
+      <div
+        :if={@view.phase == :game_over}
+        class="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      >
+        <div class="bg-gray-900 border-4 border-gray-700 p-8 rounded flex flex-col items-center gap-6 shadow-2xl">
+          <h2 class="text-4xl text-white">Game Over!</h2>
+          <p class="text-2xl text-white">
+            {if @view.winner_id == @player_id, do: "You won!", else: "You lost!"}
+          </p>
+          <div class="flex flex-col gap-4">
+            <.button phx-click="go_home" class="btn-pixel w-fit px-8 mt-4">
+              Back To Home
+            </.button>
+          </div>
+        </div>
+      </div>
     </main>
     """
   end
@@ -120,6 +138,16 @@ defmodule BattleshipWeb.GameLive do
       socket
       |> apply_view(Server.view(game_id, player_id))
       |> assign(:placement_remaining_ms, remaining_ms)
+
+    {:noreply, socket}
+  end
+
+  def handle_info({:phase_changed, :game_over, _winner_id}, socket) do
+    %{game_id: game_id, player_id: player_id} = socket.assigns
+
+    socket =
+      socket
+      |> apply_view(Server.view(game_id, player_id))
 
     {:noreply, socket}
   end
@@ -194,6 +222,11 @@ defmodule BattleshipWeb.GameLive do
         socket = apply_view(socket, Server.view(game_id, player_id))
         {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_event("go_home", _, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/")}
   end
 
   defp apply_view(socket, {:error, :game_not_found}) do
