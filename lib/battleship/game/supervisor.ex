@@ -9,6 +9,12 @@ defmodule Battleship.Game.Supervisor do
   def init(:ok), do: DynamicSupervisor.init(strategy: :one_for_one)
 
   def start_game(game_id, player_ids) do
-    DynamicSupervisor.start_child(__MODULE__, {Server, {game_id, player_ids}})
+    child_spec =
+      Supervisor.child_spec(
+        {Server, {game_id, player_ids}},
+        restart: :transient
+      )
+
+    DynamicSupervisor.start_child(__MODULE__, child_spec)
   end
 end
