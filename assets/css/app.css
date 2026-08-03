@@ -103,3 +103,99 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+@theme {
+    --color-ocean: oklch(0.6215 0.1058 238.48);
+    --color-hull: oklch(0.6781 0.2159 39.29);
+    --color-hull-shadow: oklch(0.3584 0.1013 43.43);
+    --color-grid: oklch(0.5015 0.0958 238.48);
+}
+
+@layer utilities {
+  .font-silkscreen {
+    font-family: 'Silkscreen', cursive, monospace;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: unset;
+  }
+
+  .stroke-text {
+    text-shadow:
+      0.06em 0 0 white,
+      -0.06em 0 0 white,
+      0 0.06em 0 white,
+      0 -0.06em 0 white,
+      0.06em 0.06em 0 white,
+      -0.06em 0.06em 0 white,
+      0.06em -0.06em 0 white,
+      -0.06em -0.06em 0 white;
+  }
+
+  .grid-cell.hover.valid {
+      @apply bg-emerald-500/70;
+  }
+
+  .grid-cell.hover.invalid {
+      @apply bg-rose-500/70;
+  }
+}
+
+@layer components {
+  .btn-pixel {
+    @apply flex h-8 w-[214px] items-center justify-center;
+    @apply text-base font-normal tracking-tight leading-none text-white text-center;
+    @apply bg-hull shadow-[0px_8px_0px_var(--color-hull-shadow)];
+    image-rendering: pixelated;
+  }
+
+  .btn-pixel:hover {
+    @apply translate-y-[2px] bg-[#E07A5F] shadow-[0px_6px_0px_var(--color-hull-shadow)];
+  }
+
+  .btn-pixel:active,
+  .btn-pixel.is-active {
+    @apply translate-y-[8px] bg-hull shadow-[0px_0px_0px_var(--color-hull-shadow)];
+  }
+
+  .btn-pixel:disabled {
+    @apply translate-y-[8px] bg-hull shadow-[0px_0px_0px_var(--color-hull-shadow)];
+  }
+
+  .btn-pixel-icon {
+    @apply flex h-8 w-8 p-1 items-center justify-center text-white;
+    @apply bg-hull shadow-[0px_8px_0px_var(--color-hull-shadow)];
+    image-rendering: pixelated;
+  }
+
+  .btn-pixel-icon:hover {
+    @apply translate-y-[2px] bg-[#E07A5F] shadow-[0px_6px_0px_var(--color-hull-shadow)];
+  }
+  .btn-pixel-icon:active,
+  .btn-pixel-icon.is-active {
+    @apply translate-y-[8px] bg-hull shadow-[0px_0px_0px_var(--color-hull-shadow)];
+  }
+
+  .grid-cell {
+      @apply w-6 h-6 sm:w-7 sm:h-7;
+  }
+
+  .grid-label {
+      @apply flex items-center justify-center text-white text-xs sm:text-sm;
+      user-select: none;
+  }
+}
+
+@keyframes loading-dots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+  100% { content: ""; }
+}
+
+.animate-dots::after {
+  display: inline-block;
+  content: "";
+  animation: loading-dots 1.5s infinite steps(1);
+  text-align: left;
+  width: 1em;
+}

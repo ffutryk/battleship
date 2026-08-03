@@ -8,10 +8,13 @@ defmodule Battleship.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      BattleshipWeb.Telemetry,
-      Battleship.Repo,
+      # Battleship.Repo,
       {DNSCluster, query: Application.get_env(:battleship, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Battleship.PubSub},
+      Battleship.Game.Registry,
+      Battleship.Matchmaking.Supervisor,
+      Battleship.Game.Supervisor,
+      {Task.Supervisor, name: Battleship.TaskSupervisor},
       # Start a worker by calling: Battleship.Worker.start_link(arg)
       # {Battleship.Worker, arg},
       # Start to serve requests, typically the last entry

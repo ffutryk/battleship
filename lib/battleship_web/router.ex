@@ -8,16 +8,15 @@ defmodule BattleshipWeb.Router do
     plug :put_root_layout, html: {BattleshipWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
-  end
 
-  pipeline :api do
-    plug :accepts, ["json"]
+    plug BattleshipWeb.Plugs.EnsurePlayer
   end
 
   scope "/", BattleshipWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", HomeLive, :index
+    live "/games/:id", GameLive, :index
   end
 
   # Other scopes may use custom stacks.
