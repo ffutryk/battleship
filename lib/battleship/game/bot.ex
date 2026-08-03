@@ -7,6 +7,8 @@ defmodule Battleship.Game.Bot do
     GenServer.start_link(__MODULE__, {game_id, bot_id})
   end
 
+  def gen_id, do: "bot_" <> Base.url_encode64(:crypto.strong_rand_bytes(12), padding: false)
+
   @impl true
   def init({game_id, bot_id}) do
     Phoenix.PubSub.subscribe(Battleship.PubSub, "game:#{game_id}")
