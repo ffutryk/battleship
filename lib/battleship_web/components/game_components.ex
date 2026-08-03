@@ -9,12 +9,14 @@ defmodule BattleshipWeb.GameComponents do
   attr :shots, :map, default: %{}
   attr :ships, :map, default: %{}
   attr :own?, :boolean, default: false
+  attr :active, :boolean, default: true
 
   def board(assigns) do
     ~H"""
     <div
       id={@id}
       phx-hook={@phx_hook}
+      data-active={to_string(@active)}
       class={["flex flex-col gap-1 select-none relative", @class]}
     >
       <div :for={row <- 0..9} class="flex gap-1">

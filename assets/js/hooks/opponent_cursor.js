@@ -23,8 +23,15 @@ export const OpponentCursor = {
     this.updateCursorPosition();
   },
 
+  isActive() {
+    return this.el.dataset.active === "true";
+  },
+
   updateCursorPosition() {
-    if (this.currentRow === null || this.currentCol === null) return;
+    if (!this.isActive() || this.currentRow === null || this.currentCol === null) {
+      this.$ghost.style.opacity = "0";
+      return;
+    }
 
     const $cell = this.el.querySelector(
       `[data-row="${this.currentRow}"][data-col="${this.currentCol}"]`
