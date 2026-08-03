@@ -52,6 +52,10 @@ defmodule Battleship.Game.State do
     end)
   end
 
+  def all_disconnected?(%__MODULE__{players: players}) do
+    Enum.all?(players, fn {_id, p} -> p.connected == false end)
+  end
+
   def mark_ready(%__MODULE__{phase: :placement} = state, player_id),
     do: update_player(state, player_id, &Map.put(&1, :ready, true))
 

@@ -179,6 +179,15 @@ defmodule BattleshipWeb.GameLive do
     {:noreply, socket}
   end
 
+  def handle_info(:game_closed, socket) do
+    socket =
+      socket
+      |> put_flash(:info, "The game room has been closed.")
+      |> push_navigate(to: "/")
+
+    {:noreply, socket}
+  end
+
   @impl true
   def handle_event("hover_cell", %{"row" => row, "col" => col}, socket) do
     %{game_id: game_id, player_id: player_id} = socket.assigns

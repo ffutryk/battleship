@@ -139,17 +139,30 @@ defmodule Battleship.Game.Server do
   @impl true
   def handle_info(:placement_timeout, state), do: {:noreply, state}
 
+  @impl true
+  def handle_info(:game_over_shutdown, state) do
+    broadcast(state.id, :game_closed)
+
+    {:stop, :normal, state}
+  end
+
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     disconnected_player_id =
       Enum.find_value(state.players, fn {id, player_data} ->
         if Map.get(player_data, :pid) == pid, do: id
       end)
 
-    new_state =
-      state
-      |> State.mark_disconnected(disconnected_player_id)
+    if disconnected_player_id do
+      new_state = State.mark_disconnected(state, disconnected_player_id)
 
-    {:noreply, new_state}
+      if State.all_disconnected?(new_state) do
+        {:stop, :normal, new_state}
+      else
+        {:noreply, new_state}
+      end
+    else
+      {:noreply, state}
+    end
   end
 
   defp progress(%State{phase: :waiting_opponent} = state) do
@@ -180,6 +193,7 @@ defmodule Battleship.Game.Server do
     if Enum.any?(state.boards, fn {_id, board} -> Board.all_sunken?(board) end) do
       new_state = State.next_phase(state)
       broadcast(state.id, {:phase_changed, :game_over, new_state.winner_id})
+      Process.send_after(self(), :game_over_shutdown, :timer.seconds(15))
       new_state
     else
       State.next_turn(state)
