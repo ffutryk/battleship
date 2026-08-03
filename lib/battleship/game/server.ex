@@ -95,7 +95,7 @@ defmodule Battleship.Game.Server do
   def handle_call({:player_connected, player_id, pid}, _from, state) do
     Process.monitor(pid)
 
-    case State.mark_connected(state, player_id) do
+    case State.mark_connected(state, player_id, pid) do
       {:error, _} = error ->
         {:reply, error, state}
 
@@ -118,7 +118,7 @@ defmodule Battleship.Game.Server do
            fire_shot(state, shooter_id, shot_coords) do
       new_state = put_board(state, opponent_id, updated_board)
 
-      broadcast(state.id, {:shot, shooter_id, opponent_id, shot_coords, shot_state})
+      broadcast(state.id, :shot)
 
       {:reply, shot_state, progress(new_state)}
     else
@@ -138,6 +138,32 @@ defmodule Battleship.Game.Server do
 
   @impl true
   def handle_info(:placement_timeout, state), do: {:noreply, state}
+
+  @impl true
+  def handle_info(:game_over_shutdown, state) do
+    broadcast(state.id, :game_closed)
+
+    {:stop, :normal, state}
+  end
+
+  def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
+    disconnected_player_id =
+      Enum.find_value(state.players, fn {id, player_data} ->
+        if Map.get(player_data, :pid) == pid, do: id
+      end)
+
+    if disconnected_player_id do
+      new_state = State.mark_disconnected(state, disconnected_player_id)
+
+      if State.all_disconnected?(new_state) do
+        {:stop, :normal, new_state}
+      else
+        {:noreply, new_state}
+      end
+    else
+      {:noreply, state}
+    end
+  end
 
   defp progress(%State{phase: :waiting_opponent} = state) do
     timer_ref = Process.send_after(self(), :placement_timeout, @placement_timeout)
@@ -167,6 +193,7 @@ defmodule Battleship.Game.Server do
     if Enum.any?(state.boards, fn {_id, board} -> Board.all_sunken?(board) end) do
       new_state = State.next_phase(state)
       broadcast(state.id, {:phase_changed, :game_over, new_state.winner_id})
+      Process.send_after(self(), :game_over_shutdown, :timer.seconds(15))
       new_state
     else
       State.next_turn(state)
@@ -174,11 +201,16 @@ defmodule Battleship.Game.Server do
   end
 
   defp build_view(state, player_id) do
+    player_board = state.boards[player_id]
+    opponent_board = State.opponent_board(state, player_id)
+
     %{
       game_id: state.id,
       phase: state.phase,
       player_board: state.boards[player_id],
-      player_shots: State.opponent_board(state, player_id).shots
+      player_shots: Board.shot_results(opponent_board),
+      enemy_shots: Board.shot_results(player_board),
+      is_turn?: state.battle_turn == player_id
     }
     |> maybe_put_remaining_ms(state)
     |> maybe_put_winner(state)

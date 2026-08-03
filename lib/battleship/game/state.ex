@@ -36,8 +36,25 @@ defmodule Battleship.Game.State do
     %__MODULE__{state | phase: :game_over, winner_id: shooter_id}
   end
 
-  def mark_connected(%__MODULE__{} = state, player_id),
-    do: update_player(state, player_id, &Map.put(&1, :connected, true))
+  def mark_connected(%__MODULE__{} = state, player_id, pid) do
+    update_player(state, player_id, fn player ->
+      player
+      |> Map.put(:connected, true)
+      |> Map.put(:pid, pid)
+    end)
+  end
+
+  def mark_disconnected(%__MODULE__{} = state, player_id) do
+    update_player(state, player_id, fn player ->
+      player
+      |> Map.put(:connected, false)
+      |> Map.put(:pid, nil)
+    end)
+  end
+
+  def all_disconnected?(%__MODULE__{players: players}) do
+    Enum.all?(players, fn {_id, p} -> p.connected == false end)
+  end
 
   def mark_ready(%__MODULE__{phase: :placement} = state, player_id),
     do: update_player(state, player_id, &Map.put(&1, :ready, true))
