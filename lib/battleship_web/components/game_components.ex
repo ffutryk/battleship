@@ -7,6 +7,7 @@ defmodule BattleshipWeb.GameComponents do
   attr :phx_click, :string, default: nil
   attr :cell_class, :string, default: nil
   attr :shots, :map, default: %{}
+  attr :ships, :map, default: %{}
   attr :own?, :boolean, default: false
 
   def board(assigns) do
@@ -27,7 +28,14 @@ defmodule BattleshipWeb.GameComponents do
           phx-click={@phx_click}
           class={["grid-cell bg-grid cursor-pointer", @cell_class]}
         >
+          <% ship_cell = @ships[{row, col}] %>
           <% shot = @shots[{row, col}] %>
+          <img
+            :if={ship_cell && !shot}
+            src={ship_cell.src}
+            style={ship_cell.style}
+            class="inset-0 w-full h-full object-cover pointer-events-none"
+          />
           <img :if={shot} src={BattleshipWeb.Game.PegSprites.sprite_for(shot, @own?)} />
         </div>
         <div class="grid-cell"></div>

@@ -2,6 +2,7 @@ defmodule BattleshipWeb.GameLive do
   use BattleshipWeb, :live_view
 
   alias Battleship.Game.Server
+  alias BattleshipWeb.Game.ShipSprites
   import BattleshipWeb.GameComponents
 
   @impl true
@@ -75,7 +76,9 @@ defmodule BattleshipWeb.GameLive do
     """
   end
 
-  defp battle_phase(assigns) do
+  defp battle_phase(%{view: %{player_board: %{ships: ships}}} = assigns) do
+    assigns = assign(assigns, :own_fleet, ShipSprites.fleet_cells(ships))
+
     ~H"""
     <main class="h-full flex flex-col items-center justify-center">
       <div class="flex flex-col md:flex-row">
@@ -98,6 +101,7 @@ defmodule BattleshipWeb.GameLive do
             phx_hook="OpponentCursor"
             class="[zoom:0.5]"
             shots={@view.enemy_shots}
+            ships={@own_fleet}
             own?
           />
         </div>
