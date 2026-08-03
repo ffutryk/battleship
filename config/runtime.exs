@@ -74,6 +74,8 @@ if config_env() == :prod do
 
   config :battleship, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
+  custom_domain = System.get_env("CUSTOM_DOMAIN") || "example.com"
+
   config :battleship, BattleshipWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
@@ -87,6 +89,11 @@ if config_env() == :prod do
     ssl: [
       verify: :verify_peer,
       cacerts: :public_key.cacerts_get()
+    ],
+    force_ssl: [rewrite_on: [:x_forwarded_proto]],
+    check_origin: [
+      "https://#{custom_domain}",
+      "https://#{System.get_env("APP_NAME")}.gigalixirapp.com"
     ]
 
   # ## SSL Support
