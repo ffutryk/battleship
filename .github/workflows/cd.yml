@@ -1,0 +1,29 @@
+name: CD
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Gigalixir
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: Deploy
+        uses: gigalixir/gigalixir-action@v0
+        with:
+          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_EMAIL }}
+          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_API_KEY }}
+          GIGALIXIR_APP: ${{ secrets.GIGALIXIR_APP }}
+          MIGRATIONS: false
+          SSH_PRIVATE_KEY: ${{ secrets.GIGALIXIR_SSH_PRIVATE_KEY }}
