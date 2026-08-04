@@ -90,7 +90,6 @@ if config_env() == :prod do
       verify: :verify_peer,
       cacerts: :public_key.cacerts_get()
     ],
-    force_ssl: [rewrite_on: [:x_forwarded_proto]],
     check_origin: [
       "https://#{custom_domain}",
       "https://#{System.get_env("APP_NAME")}.gigalixirapp.com"
