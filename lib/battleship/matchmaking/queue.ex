@@ -3,7 +3,7 @@ defmodule Battleship.Matchmaking.Queue do
 
   alias Battleship.Game.Bot
 
-  @wait_before_bot :timer.seconds(15)
+  @wait_before_bot :timer.seconds(5)
 
   def start_link(args), do: GenServer.start_link(__MODULE__, args, name: __MODULE__)
 
